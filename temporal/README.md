@@ -3,9 +3,9 @@
 
 Temporal is a distributed, scalable, durable, and highly available orchestration engine designed to execute asynchronous long-running business logic in a resilient way.
 
-This repo contains a basic V3 [Helm](https://helm.sh) chart that deploys Temporal to a Kubernetes cluster. The dependencies that are bundled with this solution by default offer an easy way to experiment with Temporal software. This Helm chart can also be used to install just the Temporal server, configured to connect to dependencies (such as a Cassandra, MySQL database or PostgreSQL database) that you may already have available in your environment.
+This repo contains a basic V3 [Helm](https://helm.sh) chart that deploys Temporal to a Kubernetes cluster. The dependencies that are bundled with this solution by default offer an easy way to experiment with Temporal software. This Helm chart can also be used to install just the Temporal server, configured to connect to dependencies (such as a Cassandra, MySQL, or PostgreSQL database) that you may already have available in your environment.
 
-This Helm Chart code is tested by a dedictated test pipeline. It is also used extensively by other Temporal pipelines for testing various aspects of Temporal systems. Our test pipeline currently use Helm 3.1.1.
+This Helm Chart code is tested by a dedicated test pipeline. It is also used extensively by other Temporal pipelines for testing various aspects of Temporal systems. Our test pipeline currently uses Helm 3.1.1.
 
 # Install Temporal service on a Kubernetes cluster
 
@@ -33,15 +33,14 @@ Temporal can be configured to run with various dependencies. The default "Batter
 
 * Cassandra
 * ElasticSearch
-* Kafka (with Zookeeper)
-* Promethueus
+* Prometheus
 * Grafana
 
 The sections that follow describe various deployment configurations, from a minimal one-replica installation using included dependencies, to a replicated deployment on existing infrastructure.
 
 ### Minimal installation with required dependencies only
 
-To install Temporal in a limited but working and self-contained configuration (one replica of Cassandra and each of Temporal's services, no metrics or Elastic Search), you can run the following command
+To install Temporal in a limited but working and self-contained configuration (one replica of Cassandra and each of Temporal's services, no metrics or ElasticSearch), you can run the following command
 
 ```
 ~/temporal-helm$ helm install \
@@ -50,13 +49,12 @@ To install Temporal in a limited but working and self-contained configuration (o
     --set prometheus.enabled=false \
     --set grafana.enabled=false \
     --set elasticsearch.enabled=false \
-    --set kafka.enabled=false \
     temporaltest . --timeout 15m
 ```
 
 This configuration consumes limited resources and it is useful for small scale tests (such as using minikube).
 
-Below is an example of an enviroment installed in this configuration:
+Below is an example of an environment installed in this configuration:
 
 ```
 $ kubectl get pods
@@ -75,7 +73,7 @@ temporaltest-worker-7c9d68f4cf-8tzfw           1/1     Running   2          11m
 
 This method requires a three node kubernetes cluster to successfully bring up all the dependencies.
 
-By default, Temporal Helm Chart configures Temporal to run with a three node Cassandra cluster (for persistence) and ElasticSearch/Kafka (for "visibility" features), Prometheus, and Grafana. Kafka also depends on Zookeeper. By default, Temporal Helm Chart installs all dependencies, out of the box.
+By default, Temporal Helm Chart configures Temporal to run with a three node Cassandra cluster (for persistence) and Elasticsearch (for "visibility" features), Prometheus, and Grafana. By default, Temporal Helm Chart installs all dependencies, out of the box.
 
 To install Temporal with all of its dependencies run this command:
 
@@ -83,17 +81,27 @@ To install Temporal with all of its dependencies run this command:
 ~/temporal-helm$ helm install temporaltest . --timeout 900s
 ```
 
-To use your own instance of ElasticSearch, MySQL. PostgreSQL, or Cassandra, please read the "Bring Your Own" sections below.
+To use your own instance of ElasticSearch, MySQL, PostgreSQL, or Cassandra, please read the "Bring Your Own" sections below.
 
-Other components (Prometheus, Kafka, Grafana) can be omitted from the installation by setting their corresponding 'enable' flag to `false` (and by pointing `server.kafka.host` to your existing instance of Kafka):
+Other components (Prometheus, Grafana) can be omitted from the installation by setting their corresponding `enable` flag to `false`:
 
 ```bash
-~/temporal-helm$ helm install
+~/temporal-helm$ helm install \
     --set prometheus.enabled=false \
     --set grafana.enabled=false \
-    --set kafka.enabled=false \
-    --set server.kafka.host=mykafka-headless:9092
     temporaltest . --timeout 900s
+```
+
+### Install with sidecar containers
+
+You may need to provide your own sidecar containers. 
+
+To do so, you may look at the example for Google's `cloud sql proxy` in the `values/values.cloudsqlproxy.yaml` and pass that file to `helm install`. 
+
+Example:
+
+```bash
+~/temporal-helm$ helm install -f values/values.cloudsqlproxy.yaml temporaltest . --timeout 900s
 ```
 
 ### Install with your own ElasticSearch
@@ -241,16 +249,15 @@ The example below demonstrates a few things:
 1. How to set values via the command line rather than the environment.
 2. How to configure a database (shows Cassandra, but MySQL works the same way)
 3. How to enable TLS for the database connection.
+4. How to enable Auth for the Web UI
 
 ```bash
 helm install temporaltest \
    -f values/values.cassandra.yaml \
    -f values/values.elasticsearch.yaml \
-   --set kafka.enabled=false \
    --set grafana.enabled=false \
    --set prometheus.enabled=false \
    --set server.replicaCount=5 \
-   --set server.kafka.host=kafkat-headless:9092 \
    --set server.config.persistence.default.cassandra.hosts=cassandra.data.host.example \
    --set server.config.persistence.default.cassandra.user=cassandra_user \
    --set server.config.persistence.default.cassandra.password=cassandra_user_password \
@@ -282,8 +289,8 @@ NAME                                   TYPE        CLUSTER-IP       EXTERNAL-IP 
 ...
 temporaltest-admintools                ClusterIP   172.20.237.59    <none>        22/TCP                                         15m
 temporaltest-frontend-headless         ClusterIP   None             <none>        7233/TCP,9090/TCP                              15m
-temporaltest-history-headless          ClusterIP   None             <none>        7934/TCP,9090/TCP                              15m
-temporaltest-matching-headless         ClusterIP   None             <none>        7935/TCP,9090/TCP                              15m
+temporaltest-history-headless          ClusterIP   None             <none>        7234/TCP,9090/TCP                              15m
+temporaltest-matching-headless         ClusterIP   None             <none>        7235/TCP,9090/TCP                              15m
 temporaltest-worker-headless           ClusterIP   None             <none>        7239/TCP,9090/TCP                              15m
 ...
 ```
@@ -436,6 +443,9 @@ $ kubectl apply -f dynamicconfigmap.yaml
 You can use helm upgrade with the "--dry-run" option to generate the content for the dynamicconfigmap.yaml.
 
 The dynamic-config ConfigMap is referenced as a mounted volume within the Temporal Containers, so any applied change will be automatically picked up by all pods within a few minutes without the need for pod recycling. See k8S documentation (https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#mounted-configmaps-are-updated-automatically) for more details on how this works.
+
+### Updating Temporal Web Config
+the config file `server/config.yml` for the temporal web ui is referenced as a mounted volume within the Temporal Web UI Container and can be populated by inserting values in the `web.config` section in the `values.yml` for possible config check (https://github.com/temporalio/web#configuring-authentication-optional)
 
 ## Uninstalling
 

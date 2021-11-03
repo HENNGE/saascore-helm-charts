@@ -17,13 +17,16 @@ data:
       level: {{ .Values.server.config.logLevel | quote }}
 
     persistence:
-      defaultStore: default
+      defaultStore: {{ .Values.server.config.persistence.defaultStore }}
       visibilityStore: visibility
     {{- if or $.Values.elasticsearch.enabled $.Values.elasticsearch.external }}
       advancedVisibilityStore: es-visibility
     {{- end }}
       numHistoryShards: {{ .Values.server.config.numHistoryShards }}
       datastores:
+        {{- with .Values.server.config.persistence.additionalStores }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         default:
           {{- if eq (include "temporal.persistence.driver" (list . "default")) "cassandra" }}
           cassandra:
@@ -33,6 +36,12 @@ data:
             {{- with (omit .Values.server.config.persistence.default.cassandra "hosts" "port" "password" "existingSecret") }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          {{- end }}
+          {{- if $.Values.server.config.persistence.faultinjection}}
+          {{- if $.Values.server.config.persistence.faultinjection.rate }}
+          faultInjection:
+            rate: {{ $.Values.server.config.persistence.faultinjection.rate }}
+          {{- end }}
           {{- end }}
           {{- if eq (include "temporal.persistence.driver" (list . "default")) "sql" }}
           sql:
@@ -143,25 +152,6 @@ data:
           prometheus:
             timerType: {{ default .Values.server.metrics.prometheus.timerType .Values.server.worker.metrics.prometheus.timerType }}
             listenAddress: "0.0.0.0:9090"
-
-    {{- if not $.Values.kafka.omitConfig }}
-    kafka:
-        tls:
-            enabled: false
-        clusters:
-            test:
-                brokers:
-                    - {{ include "temporal.kafka.address" . }}
-        topics:
-            temporal-visibility-dev:
-                cluster: test
-            temporal-visibility-dev-dlq:
-                cluster: test
-        applications:
-            visibility:
-                topic: temporal-visibility-dev
-                dlq-topic: temporal-visibility-dev-dlq
-    {{- end }}
 
     {{- if $.Values.server.config.clusterMetadata }}
     clusterMetadata:
