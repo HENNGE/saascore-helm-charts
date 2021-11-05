@@ -3,7 +3,7 @@ entries:
   temporal:
   - apiVersion: v2
     appVersion: 1.13.0
-    created: "2021-11-03T17:33:49.922763+09:00"
+    created: "2021-11-05T11:53:20.028624+09:00"
     dependencies:
     - condition: cassandra.enabled
       name: cassandra
@@ -38,4 +38,15 @@ entries:
     urls:
     - temporal-0.13.0.tgz
     version: 0.13.0
-generated: "2021-11-03T17:33:49.906487+09:00"
+  temporal-bench:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2021-11-05T11:53:20.029247+09:00"
+    description: A Helm chart for Kubernetes
+    digest: 6ae384255b946149e8b53fb3f3e7b3a3079e899aef43d52a8674fd4deac576a1
+    name: temporal-bench
+    type: application
+    urls:
+    - temporal-bench-0.1.0.tgz
+    version: 0.1.0
+generated: "2021-11-05T11:53:20.0185+09:00"
