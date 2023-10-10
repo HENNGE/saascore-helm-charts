@@ -3,15 +3,17 @@
 main() {
 	set -eu
 
-	curl -L -O https://github.com/temporalio/helm-charts/archive/v1.21.5.zip
-	unzip v1.21.5.zip
-	rm v1.21.5.zip
-	mv helm-charts-1.21.5 temporal
+	temporal_ver=1.14.5
 
-	cd temporal
+	curl -L -O https://github.com/temporalio/helm-charts/archive/v${temporal_ver}.zip
+	unzip v${temporal_ver}.zip
+	rm v${temporal_ver}.zip
+	mv helm-charts-${temporal_ver} temporal_${temporal_ver}
+
+	cd temporal_${temporal_ver}
 	helm dependencies update
 	cd ../
-	helm package temporal
+	helm package temporal_${temporal_ver}
 	helm repo index .
 }
 
