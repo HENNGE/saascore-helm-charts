@@ -3,7 +3,7 @@
 main() {
 	set -eu
 
-	temporal_ver=1.14.5
+	temporal_ver=1.22.2
 
 	curl -L -O https://github.com/temporalio/helm-charts/archive/v${temporal_ver}.zip
 	unzip v${temporal_ver}.zip
