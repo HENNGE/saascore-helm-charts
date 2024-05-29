@@ -20,6 +20,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: temporalio/maru
+      
+      - name: Calculate Docker image labels
+        run: |
+          echo "GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "GIT_REF=$(git rev-parse --abbrev-ref HEAD)" >> "$GITHUB_ENV"
+          echo "BUILD_DATE=$(git show -s --format=%cI)" >> "$GITHUB_ENV"
     
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -42,11 +48,11 @@ jobs:
           context: worker/
           platforms: linux/amd64,linux/arm64
           labels: |
-            org.opencontainers.image.title=${{ github.event.repository.name }}
-            org.opencontainers.image.description=${{ github.event.repository.description }}
+            org.opencontainers.image.title=maru
+            org.opencontainers.image.description=Benchmarks for Temporal workflows
             org.opencontainers.image.url=${{ github.event.repository.html_url }}
             org.opencontainers.image.source=${{ github.event.repository.clone_url }}
-            org.opencontainers.image.version=${{ steps.tags.outputs.version }}
-            org.opencontainers.image.created=${{ steps.tags.outputs.build_date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
+            org.opencontainers.image.version=${{ env.GIT_REF }}
+            org.opencontainers.image.created=${{ env.BUILD_DATE }}
+            org.opencontainers.image.revision=${{ env.GIT_SHA }}
+            org.opencontainers.image.licenses=MIT
